@@ -57,27 +57,39 @@ namespace TileSystem
                 std::ifstream file(path); // get csv file
                 if (!file.is_open()) return false; // leave if not opened
 
+                std::vector<int> parsed; // maintain a vector of what has already been parsed
                 std::string line; // line in the csv, or a row of tiles
-                int y = 0; // vertical position, or which row are you on
 
-                while (std::getline(file, line) && y < height) // go through the csv
+                // find correct map sizing based on the csv
+                int detectedWidth = 0;
+                int detectedHeight = 0;
+
+                while (std::getline(file, line)) // get each line in the csv
                 {
                     std::stringstream ss(line);
                     std::string cell;
-                    int x = 0;
+                    int rowWidth = 0;
 
-                    while (std::getline(ss, cell, ',') && x < width) // go through the csv and get the ID numbers to assign them
+                    while (std::getline(ss, cell, ',')) // split based on commas and loop for each character
                     {
-                        tiles[y * width + x] = std::stoi(cell);
-                        x++;
+                        parsed.push_back(std::stoi(cell)); // convert cell to int and push to temporary ID vector
+                        rowWidth++; // keep track of the maximum row width
                     }
-                    y++;
+
+                    if (rowWidth > detectedWidth) // save the width if not initialized yet
+                        detectedWidth = rowWidth;
+
+                    detectedHeight++; // increment the height to keep track of it to be saved
                 }
 
-                return true; // return true if success
+                // finally initialize all needed variables
+                width = detectedWidth;
+                height = detectedHeight;
+                tiles = std::move(parsed);
+
+                return true; // if success then complete
             }
-            Tilemap(int ts, int w, int h, sf::Texture& t) : tileSize(ts), width(w), height(h), texture(&t), tiles(w * h, -1) {}
-            Tilemap(int ts, int w, int h, sf::Texture& t, std::string fp) : tileSize(ts), width(w), height(h), texture(&t), tiles(w * h, -1) { loadCSV(fp); }
+            Tilemap(int ts, sf::Texture& t, std::string fp) : tileSize(ts), texture(&t) { loadCSV(fp); }
             void set(int x, int y, int id) { tiles[y * width + x] = id; } // set a specific tile's ID
             void fill(int id) { std::fill(tiles.begin(), tiles.end(), id); } // file a specific ID of tile with a tile
             int& getTile(int x, int y) { return tiles[y * width + x]; } // get a specific tile in the tilemap
